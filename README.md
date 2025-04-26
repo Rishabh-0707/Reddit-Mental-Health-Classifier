@@ -81,6 +81,8 @@ Explore other feature extraction techniques.
 
 Improve text preprocessing with lemmatization and stopword removal.
 
+Improving the accuracy by training it more to achieve more than 90% accuracy.
+
 💡 Contributing-
 
 Feel free to fork and improve the project. Suggestions and contributions are welcome! 😊
