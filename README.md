@@ -1,10 +1,10 @@
 # Reddit-Mental-Health-Classifier
 
-📌 Project Overview
+📌 Project Overview-
 
 This project analyzes and classifies mental health-related posts from Reddit using Logistic Regression and TF-IDF. The model categorizes posts into different mental health topics based on their content.
 
-🛠 Features
+🛠 Features-
 
 Data Cleaning & Preprocessing: Removes URLs, special characters, and HTML tags.
 
@@ -14,7 +14,7 @@ Data Visualization: Bar charts, pie charts, and confusion matrix for better insi
 
 Feature Importance Analysis: Identifies key words influencing classification.
 
-📂 Dataset
+📂 Dataset-
 
 Dataset: Reddit Mental Health Data(kaggle)
 
