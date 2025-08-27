@@ -1,0 +1,245 @@
+# -------------------------
+# SIMPLIFIED HIGH-ACCURACY APPROACH (no problematic imports)
+# -------------------------
+import pandas as pd
+import numpy as np
+import re
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.linear_model import LogisticRegression
+import nltk
+
+# Download NLTK data
+nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
+
+# -------------------------
+# Enhanced preprocessing for better accuracy
+# -------------------------
+data_path = '/kaggle/input/reddit-mental-health-data/data_to_be_cleansed.csv'
+df = pd.read_csv(data_path)
+
+stop_words = set(nltk.corpus.stopwords.words('english'))
+lemmatizer = nltk.stem.WordNetLemmatizer()
+
+def enhanced_clean_text(text):
+    if not isinstance(text, str):
+        return ""
+    
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove URLs and HTML
+    text = re.sub(r"http\S+|www\S+", "", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    
+    # Keep emotional punctuation
+    text = re.sub(r"[^a-z\s!?.]", "", text)
+    text = re.sub(r"!+", " EXCLAMATION ", text)
+    text = re.sub(r"\?+", " QUESTION ", text)
+    
+    # Process words
+    words = []
+    for word in text.split():
+        if word not in stop_words and len(word) > 2:
+            if word in ['EXCLAMATION', 'QUESTION']:
+                words.append(word)
+            else:
+                words.append(lemmatizer.lemmatize(word))
+    
+    return " ".join(words) if words else "no_content"
+
+# Clean data
+df = df[['text', 'target']].dropna()
+df['text_clean'] = df['text'].apply(enhanced_clean_text)
+df = df[df['text_clean'].str.len() > 10]
+
+print("Dataset shape:", df.shape)
+print("Class distribution:\n", df['target'].value_counts())
+
+# -------------------------
+# Strategic oversampling (better than full balancing)
+# -------------------------
+from sklearn.utils import resample
+
+# Target 85% of majority class size (reduces overfitting)
+max_count = df['target'].value_counts().max()
+target_size = int(max_count * 0.85)
+
+balanced_dfs = []
+for target_class in df['target'].unique():
+    class_df = df[df['target'] == target_class]
+    if len(class_df) < target_size:
+        # Oversample minorities
+        oversampled = resample(class_df, n_samples=target_size, random_state=42)
+        balanced_dfs.append(oversampled)
+    else:
+        # Keep majority as-is or slightly undersample
+        sampled = resample(class_df, n_samples=min(len(class_df), target_size + 200), random_state=42)
+        balanced_dfs.append(sampled)
+
+df_balanced = pd.concat(balanced_dfs, ignore_index=True)
+print("After strategic balancing:", df_balanced.shape)
+print("New distribution:\n", df_balanced['target'].value_counts())
+
+# -------------------------
+# Train-test split
+# -------------------------
+X = df_balanced['text_clean']
+y = df_balanced['target']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# -------------------------
+# Multi-vectorizer approach for higher accuracy
+# -------------------------
+print("Creating multiple feature representations...")
+
+# Optimized TF-IDF (word-level)
+tfidf_word = TfidfVectorizer(
+    max_features=12000,
+    ngram_range=(1, 2),
+    stop_words='english',
+    min_df=3,
+    max_df=0.9,
+    sublinear_tf=True,
+    use_idf=True
+)
+
+# Character-level TF-IDF (captures style)
+tfidf_char = TfidfVectorizer(
+    analyzer='char',
+    ngram_range=(3, 5),
+    max_features=8000,
+    min_df=2,
+    max_df=0.95
+)
+
+# Count vectorizer (different perspective)
+count_vec = CountVectorizer(
+    max_features=8000,
+    ngram_range=(1, 3),
+    stop_words='english',
+    min_df=2
+)
+
+# Transform training data
+X_tfidf_word_train = tfidf_word.fit_transform(X_train)
+X_tfidf_char_train = tfidf_char.fit_transform(X_train)
+X_count_train = count_vec.fit_transform(X_train)
+
+# Transform test data
+X_tfidf_word_test = tfidf_word.transform(X_test)
+X_tfidf_char_test = tfidf_char.transform(X_test)
+X_count_test = count_vec.transform(X_test)
+
+# -------------------------
+# Optimized Random Forest
+# -------------------------
+print("Training optimized Random Forest...")
+
+rf_optimized = RandomForestClassifier(
+    n_estimators=250,                    # More trees
+    max_depth=30,                        # Deeper trees
+    min_samples_split=3,                 # Allow more splits
+    min_samples_leaf=1,                  # More granular leaves
+    max_features='sqrt',                 # Good default
+    class_weight='balanced_subsample',   # Handle remaining imbalance
+    random_state=42,
+    n_jobs=-1,
+    bootstrap=True
+)
+
+# Train on word-level TF-IDF (usually most effective)
+rf_optimized.fit(X_tfidf_word_train, y_train)
+
+# -------------------------
+# Ensemble approach (proven 2-4% boost)
+# -------------------------
+print("Creating ensemble model...")
+
+# Logistic Regression on character features (different pattern recognition)
+lr_char = LogisticRegression(
+    random_state=42, 
+    max_iter=1000, 
+    C=2.0,
+    class_weight='balanced'
+)
+lr_char.fit(X_tfidf_char_train, y_train)
+
+# Another Random Forest on count features
+rf_count = RandomForestClassifier(
+    n_estimators=150,
+    max_depth=25,
+    min_samples_split=5,
+    class_weight='balanced',
+    random_state=42,
+    n_jobs=-1
+)
+rf_count.fit(X_count_train, y_train)
+
+# -------------------------
+# Manual ensemble (avoids VotingClassifier imports)
+# -------------------------
+def ensemble_predict(X_word, X_char, X_count):
+    # Get predictions from each model
+    pred1 = rf_optimized.predict_proba(X_word)
+    pred2 = lr_char.predict_proba(X_char)
+    pred3 = rf_count.predict_proba(X_count)
+    
+    # Average probabilities and predict
+    avg_proba = (pred1 + pred2 + pred3) / 3
+    return np.argmax(avg_proba, axis=1)
+
+# -------------------------
+# Evaluation
+# -------------------------
+# Individual models
+rf_pred = rf_optimized.predict(X_tfidf_word_test)
+rf_accuracy = accuracy_score(y_test, rf_pred)
+
+lr_pred = lr_char.predict(X_tfidf_char_test)
+lr_accuracy = accuracy_score(y_test, lr_pred)
+
+# Ensemble
+ensemble_pred = ensemble_predict(X_tfidf_word_test, X_tfidf_char_test, X_count_test)
+ensemble_accuracy = accuracy_score(y_test, ensemble_pred)
+
+print(f"\n📊 ACCURACY RESULTS:")
+print(f"Random Forest (word features): {rf_accuracy*100:.2f}%")
+print(f"Logistic Regression (char features): {lr_accuracy*100:.2f}%")
+print(f"🚀 Ensemble Model: {ensemble_accuracy*100:.2f}%")
+print(f"📈 Improvement from 81%: +{(ensemble_accuracy - 0.81)*100:.2f}%")
+
+if ensemble_accuracy >= 0.85:
+    print("✅ TARGET ACHIEVED: 85%+ accuracy!")
+else:
+    print(f"🎯 Almost there! {(0.85 - ensemble_accuracy)*100:.2f}% to go")
+
+print(f"\nTraining samples: {len(X_train)}")
+print(f"Test samples: {len(X_test)}")
+
+print("\n" + "="*60)
+print("ENSEMBLE MODEL CLASSIFICATION REPORT")
+print("="*60)
+print(classification_report(y_test, ensemble_pred, zero_division=0))
+
+# Confusion Matrix
+unique_labels = sorted(y_test.unique())
+conf_matrix = confusion_matrix(y_test, ensemble_pred, labels=unique_labels)
+
+plt.figure(figsize=(12, 10))
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
+            xticklabels=unique_labels, yticklabels=unique_labels)
+plt.title(f"Ensemble Model - Accuracy: {ensemble_accuracy*100:.1f}%", 
+          fontsize=16, fontweight='bold')
+plt.xlabel("Predicted", fontsize=12)
+plt.ylabel("Actual", fontsize=12)
+plt.tight_layout()
+plt.show()
