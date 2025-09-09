@@ -66,12 +66,8 @@ Evaluation Metrics: Accuracy, Confusion Matrix, and Classification Report
 
 🎯 Example Output-
 
-Model Accuracy: 0.85
+Model Accuracy: 90.77
 
-Classification Report:
-             precision    recall  f1-score   support
-anxiety        0.88      0.83      0.85      1200
-...
 
 📌 Future Improvements-
 
