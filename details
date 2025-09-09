@@ -1,0 +1,69 @@
+# 🧠 Mental Health Text Classification System
+
+> **Ensemble Machine Learning achieving 90.77% accuracy through advanced feature engineering and Bayesian optimization**
+
+
+## 🎯 Project Overview
+
+This project implements a **comprehensive mental health text classification system** that combines ensemble machine learning with advanced feature engineering to achieve **90.77% accuracy** - representing an **8.3% improvement over baseline models**.
+
+### 🏆 Key Achievements
+- **90.77% Classification Accuracy** using optimized ensemble methods
+- **31 Advanced Features** including psychological indicators, BERT embeddings, and sentiment analysis
+- **Bayesian-Optimized Ensemble** of 5 models with systematic weight tuning
+- **Production Deployment** via Streamlit with real-time inference capabilities
+
+## ⚙️ Technical Implementation
+
+### Ensemble Architecture
+The system combines **5 specialized models** with Bayesian-optimized weights:
+- **Random Forest** with word-level TF-IDF features
+- **Logistic Regression** with character-level TF-IDF features  
+- **Random Forest** with Count Vectorization
+- **Enhanced Random Forest** with psychological and BERT features
+- **Enhanced Logistic Regression** with comprehensive feature set
+
+### Feature Engineering Pipeline
+**31 Engineered Features** across multiple domains:
+
+#### 1. **Text Vectorization Features**
+- **TF-IDF Vectorization** (word-level and character-level)
+- **Count Vectorization** for frequency-based patterns
+- **N-gram Analysis** for contextual understanding
+
+#### 2. **Psychological Indicators**
+- Anxiety-related keyword detection and ratios
+- Depression sentiment markers
+- Cognitive and social behavior patterns
+- Emotional intensity measurements
+
+#### 3. **BERT Embeddings & Transformer Features**
+- **BERT-based sentiment analysis** for contextual understanding
+- **Transformer embeddings** for semantic representation
+- **VADER sentiment analysis** for lexicon-based scoring
+
+#### 4. **Statistical Text Features**
+- Text length and word count statistics
+- Punctuation density and capitalization ratios
+- Average word length and linguistic complexity
+
+## 📊 Model Performance
+
+| Model | Accuracy | F1-Score | Optimization Method |
+|-------|----------|----------|-------------------|
+| Random Forest (Word TF-IDF) | 87.78% | 87.45% | Grid Search Hyperparameter Tuning |
+| Logistic Regression (Char TF-IDF) | 83.89% | 83.12% | Regularization Optimization |
+| Random Forest (Count Vector) | 87.42% | 87.01% | Feature Selection & Tuning |
+| Enhanced RF (+Features) | 89.59% | 89.23% | Bayesian Hyperparameter Optimization |
+| Enhanced LR (+Features) | 61.99% | 58.34% | Grid Search & Cross-Validation |
+| **🏆 Optimized Ensemble** | **90.77%** | **90.45%** | **Bayesian Weight Optimization** |
+
+### Performance Metrics Analysis
+- **Accuracy**: 90.77% (8.3% improvement over baseline)
+- **Precision**: 90.88% (macro-averaged)
+- **Recall**: 90.12% (macro-averaged) 
+- **F1-Score**: 90.45% (weighted average)
+
+## 🔬 Advanced Feature Engineering
+
+### Psychological Feature Extraction
